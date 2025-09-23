@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nombres relatifs — a ± b (droite graduée)</title>
+<style>
+  :root{
+    --green:#06A64B; --red:#F52A2A; --ink:#101010;
+    --ui: #f6f7f9;
+  }
+  body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#fff;}
+  header{padding:12px; background:var(--ui); position:sticky; top:0; z-index:2; border-bottom:1px solid #e6e7ea;}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  input[type="number"]{width:80px; padding:6px 8px; font-size:16px;}
+  select, button{padding:6px 10px; font-size:16px;}
+  #wrap{padding:10px;}
+  canvas{width:100%; height:70vh; display:block; background:#fff;}
+</style>
+</head>
+<body>
+  <header>
+    <div class="row">
+      <label>a <input id="a" type="number" step="1" /></label>
+      <select id="op">
+        <option value="+">+</option>
+        <option value="-">-</option>
+      </select>
+      <label>b <input id="b" type="number" step="1" /></label>
+      <button id="draw">Tracer</button>
+      <button id="clear">Clear</button>
+      <button id="save">Télécharger PNG</button>
+    </div>
+  </header>
+
+  <div id="wrap">
+    <canvas id="c"></canvas>
+  </div>
+
+<script>
+(() => {
+  const GREEN = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || "#06A64B";
+  const RED   = getComputedStyle(document.documentElement).getPropertyValue('--red').trim()   || "#F52A2A";
+  const INK   = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()   || "#101010";
+
+  const aInp = document.getElementById('a');
+  const bInp = document.getElementById('b');
+  const opSel= document.getElementById('op');
+  const btnDraw = document.getElementById('draw');
+  const btnClear= document.getElementById('clear');
+  const btnSave = document.getElementById('save');
+  const canvas  = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  // Layout (en px, calculés à chaque draw)
+  let W=0,H=0, DPR=1, MARGIN_L=60, MARGIN_R=40;
+  // Y fixes (en px, basées sur H)
+  let Y_TOP1, Y_TOP2, Y_AXIS, Y_BOTTOM;
+  let THICK, HEAD; // épaisseur flèche et longueur de pointe (px)
+
+  function resizeCanvas(){
+    DPR = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
+    canvas.width  = Math.round(cssW * DPR);
+    canvas.height = Math.round(cssH * DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0); // repasser en coordonnées CSS
+    W = cssW; H = cssH;
+  }
+
+  function clearCanvas(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+
+  function formatExpr(a,b,op,total){
+    if(op === '+'){
+      const right = (b >= 0) ? `${b}` : `(${b})`;
+      return `${a} + ${right} = ${total}`;
+    }else{
+      const right = (b >= 0) ? `${b}` : `(${b})`;
+      return `${a} - ${right} = ${total}`;
+    }
+  }
+
+  function computeBounds(a,b,op){
+    const total = (op === '+') ? (a + b) : (a - b);
+    const mn = Math.min(0, a, total);
+    const mx = Math.max(0, a, total);
+    const span = mx - mn + 1;
+    const pad = Math.max(1, 0.15*span);
+    const xmin = Math.floor(mn - pad);
+    const xmax = Math.ceil(mx + pad);
+    return {xmin, xmax, total};
+  }
+
+  // Mapping unité -> px
+  let scale=1, xmin=0, xmax=0;
+  function ux(u){ return MARGIN_L + (u - xmin)*scale; }
+
+  // Dessin flèche pentagone (x0->x1 en px, y centre en px)
+  function drawArrowPentagon(x0, x1, y, color){
+    const L = Math.abs(x1 - x0);
+    if(L <= 1e-3) return;
+    const head = Math.min(HEAD, 0.6*L);
+    const half = THICK/2;
+    ctx.beginPath();
+    if(x1 >= x0){
+      ctx.moveTo(x0,        y - half);
+      ctx.lineTo(x0,        y + half);
+      ctx.lineTo(x1 - head, y + half);
+      ctx.lineTo(x1,        y);
+      ctx.lineTo(x1 - head, y - half);
+    }else{
+      ctx.moveTo(x0,        y - half);
+      ctx.lineTo(x0,        y + half);
+      ctx.lineTo(x1 + head, y + half);
+      ctx.lineTo(x1,        y);
+      ctx.lineTo(x1 + head, y - half);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  // Carte : value en unités, start en unités, rotate180 si carte retournée
+  function drawCard(startU, value, yPx, rotate180=false){
+    const dir = (value >= 0) ? 1 : -1;
+    const drawSign = rotate180 ? -dir : dir;
+    const L = Math.abs(value);
+    const x0 = ux(startU);
+    const x1 = ux(startU + drawSign*L);
+    drawArrowPentagon(x0, x1, yPx, (value>=0?GREEN:RED));
+
+    // Label au centre (texte à l'envers si rotate)
+    const cx = (x0 + x1)/2;
+    ctx.save();
+    ctx.translate(cx, yPx);
+    if(rotate180){ ctx.rotate(Math.PI); }
+    // *** CHANGEMENT: texte blanc ***
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${Math.round(THICK*0.9)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const label = (value>=0) ? String(Math.abs(value)) : String(value);
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+
+    // fin VISUELLE (en unités)
+    return startU + drawSign*L;
+  }
+
+  function drawNumberLine(xminU, xmaxU){
+    // Axe horizontal
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(ux(xminU), Y_AXIS);
+    ctx.lineTo(ux(xmaxU), Y_AXIS);
+    ctx.stroke();
+
+    // Graduations entières
+    ctx.lineWidth = 2;
+    ctx.font = `14px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for(let x=Math.floor(xminU); x<=Math.ceil(xmaxU); x++){
+      const px = ux(x);
+      ctx.beginPath();
+      ctx.moveTo(px, Y_AXIS-10);
+      ctx.lineTo(px, Y_AXIS+10);
+      ctx.stroke();
+      ctx.fillStyle = INK;
+      ctx.fillText(String(x), px, Y_AXIS+14);
+    }
+  }
+
+  function dashed(x, y0, y1){
+    ctx.save();
+    ctx.setLineDash([6,6]);
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(ux(x), y0);
+    ctx.lineTo(ux(x), y1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGuides(a, total){
+    // x=0 : colonne complète (au-dessus de la flèche 1 jusqu'au-dessous du résultat)
+    dashed(0, Y_TOP1 - THICK/2 - 2, Y_BOTTOM + THICK/2 + 2);
+    // x=a : de la pointe de la flèche 1 -> axe
+    dashed(a, Y_TOP1, Y_AXIS);
+    // x=total : de la pointe de la flèche 2 -> axe (haut)
+    dashed(total, Y_TOP2, Y_AXIS);
+    // x=total : de la pointe de la flèche résultat -> axe (bas)
+    dashed(total, Y_BOTTOM, Y_AXIS);
+  }
+
+  function drawExpr(expr){
+    // un peu au-dessus de la flèche 1
+    ctx.fillStyle = INK;
+    ctx.font = "bold 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    ctx.fillText(expr, MARGIN_L, Y_TOP1 - THICK/2 - 12);
+  }
+
+  function render(a,b,op){
+    resizeCanvas();
+    clearCanvas();
+
+    // Layout vertical
+    THICK = Math.max(18, Math.round(H * 0.07));
+    HEAD  = Math.max(20, Math.round(THICK * 0.8));
+    Y_TOP1  = Math.round(H * 0.25);
+    Y_TOP2  = Math.round(H * 0.40);
+    Y_AXIS  = Math.round(H * 0.58);
+    Y_BOTTOM= Math.round(H * 0.78);
+
+    // Bornes et échelle
+    const {xmin: axMin, xmax: axMax, total} = computeBounds(a,b,op);
+    xmin=axMin; xmax=axMax;
+    scale = (W - MARGIN_L - MARGIN_R) / (xmax - xmin || 1);
+
+    // Expression
+    drawExpr(formatExpr(a,b,op,total));
+
+    // Flèches haut
+    const end1 = drawCard(0, a, Y_TOP1, false);
+    if(op === '+'){
+      drawCard(end1, b, Y_TOP2, false);
+    }else{
+      // soustraction = carte b retournée
+      drawCard(end1, b, Y_TOP2, true);
+    }
+
+    // Axe + graduations
+    drawNumberLine(xmin, xmax);
+
+    // Guides
+    drawGuides(a, (op==='+') ? (a+b) : (a-b));
+
+    // Flèche résultat (bas)
+    const totalVal = (op==='+') ? (a+b) : (a-b);
+    drawCard(0, totalVal, Y_BOTTOM, false);
+  }
+
+  // --- UI ----
+  btnDraw.addEventListener('click', () => {
+    if(aInp.value === "" || bInp.value === ""){
+      alert("Renseigne les deux termes a et b.");
+      return;
+    }
+    const a = parseInt(aInp.value,10);
+    const b = parseInt(bInp.value,10);
+    if(Number.isNaN(a) || Number.isNaN(b)){
+      alert("Saisir deux entiers (ex. a=5, b=-3).");
+      return;
+    }
+    render(a,b,opSel.value);
+  });
+
+  btnClear.addEventListener('click', () => {
+    aInp.value = "";
+    bInp.value = "";
+    clearCanvas();
+  });
+
+  btnSave.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'relatifs.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+  // Redessin si la fenêtre change (si un tracé existe)
+  let lastParams = null;
+  new ResizeObserver(() => {
+    if(aInp.value !== "" && bInp.value !== ""){
+      const a = parseInt(aInp.value,10);
+      const b = parseInt(bInp.value,10);
+      if(!Number.isNaN(a) && !Number.isNaN(b)){
+        render(a,b,opSel.value);
+      }else{
+        resizeCanvas(); clearCanvas();
+      }
+    }else{
+      resizeCanvas(); clearCanvas();
+    }
+  }).observe(canvas);
+
+  // init canvas taille
+  resizeCanvas(); clearCanvas();
+})();
+</script>
+</body>
+</html>
