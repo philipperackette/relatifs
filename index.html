@@ -1,296 +1,396 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nombres relatifs — a ± b (droite graduée)</title>
+<title>Relatifs — Un calcul ou plusieurs calculs</title>
 <style>
-  :root{
-    --green:#06A64B; --red:#F52A2A; --ink:#101010;
-    --ui: #f6f7f9;
+  :root {
+    --bg:#ffffff; --ink:#111827; --muted:#6b7280;
+    --border:#e5e7eb; --accent:#0ea5e9; --accent2:#22c55e;
+    --green:#06A64B; --red:#F52A2A;
   }
-  body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#fff;}
-  header{padding:12px; background:var(--ui); position:sticky; top:0; z-index:2; border-bottom:1px solid #e6e7ea;}
-  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
-  input[type="number"]{width:80px; padding:6px 8px; font-size:16px;}
-  select, button{padding:6px 10px; font-size:16px;}
-  #wrap{padding:10px;}
-  canvas{width:100%; height:70vh; display:block; background:#fff;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:2rem;background:var(--bg);color:var(--ink);
+       font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{margin:0 0 1rem;font-size:clamp(1.35rem,2.4vw,2rem)}
+  .card{border:1px solid var(--border);border-radius:14px;padding:1rem;background:#fff}
+  .hidden{display:none}
+
+  /* Barre de navigation */
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:.5rem}
+  .nav .btn-accueil,.nav .btn-retour{visibility:hidden}
+  .nav.show-home .btn-accueil{visibility:visible}
+  .nav.show-retour .btn-retour{visibility:visible}
+
+  /* Boutons / entrées */
+  label{font-size:.92rem;color:var(--muted);display:block}
+  input[type="number"],select{width:100%;padding:.7rem .8rem;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--ink)}
+  .btn{padding:.7rem 1rem;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--ink);
+       cursor:pointer;transition:box-shadow .15s ease,transform .05s ease;white-space:nowrap;min-height:44px}
+  .btn:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;font-weight:700}
+  .btn.ghost{background:transparent}
+
+  /* Accueil */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .choice{display:flex;flex-direction:column;gap:.75rem}
+  .choice h2{margin:.25rem 0}
+  .choice p{color:var(--muted);margin:0}
+
+  /* Modules */
+  .controls{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:.75rem;align-items:end}
+  .controls-un{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:.75rem;align-items:end}
+  .topline{display:flex;align-items:center;gap:.75rem;margin:.5rem 0 0;color:var(--muted)}
+  .timer{font-weight:700;color:#111827;padding:.2rem .55rem;border:1px solid var(--border);border-radius:999px}
+
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+  table{width:100%;border-collapse:collapse;margin-top:1rem;font-variant-numeric:tabular-nums;min-width:720px}
+  th,td{padding:.6rem .5rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+  th{font-size:.85rem;color:var(--muted);font-weight:600}
+  td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+  .row-num{width:3ch;text-align:right;color:var(--muted)}
+  .result-cell{display:flex;align-items:center;gap:.5rem;justify-content:space-between}
+  .footnote{margin-top:.75rem;font-size:.88rem;color:var(--muted)}
+  .see-btn{font-size:.85rem;padding:.4rem .6rem;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;min-height:38px}
+  .see-btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+  /* Canvas du module "Un calcul" */
+  .zone-canvas{height:420px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  canvas{width:100%;height:100%;display:block;background:#fff}
+
+  /* Mobile */
+  @media (max-width: 820px){
+    body{padding:1rem}
+    .grid2{grid-template-columns:1fr}
+    .controls,.controls-un{grid-template-columns:1fr 1fr}
+    .btn{width:100%}
+  }
+  @media (max-width: 420px){
+    h1{font-size:1.2rem}
+    .timer{font-size:.95rem}
+    table{min-width:640px}
+  }
 </style>
 </head>
 <body>
-  <header>
-    <div class="row">
-      <label>a <input id="a" type="number" step="1" /></label>
-      <select id="op">
-        <option value="+">+</option>
-        <option value="-">-</option>
-      </select>
-      <label>b <input id="b" type="number" step="1" /></label>
-      <button id="draw">Tracer</button>
-      <button id="clear">Clear</button>
-      <button id="save">Télécharger PNG</button>
-    </div>
-  </header>
+<div class="wrap">
 
-  <div id="wrap">
-    <canvas id="c"></canvas>
+  <!-- Barre de navigation -->
+  <div id="barre" class="nav">
+    <h1 id="titre-appli">Relatifs — choisir un module</h1>
+    <div class="actions">
+      <button id="btnRetour" class="btn btn-retour">Retour à la liste</button>
+      <button id="btnAccueil" class="btn btn-accueil">Accueil</button>
+    </div>
   </div>
 
+  <!-- Accueil -->
+  <section id="vue-accueil" class="card">
+    <div class="grid2">
+      <div class="card choice">
+        <h2>Un seul calcul</h2>
+        <p>Tracer sur une droite graduée l’addition ou la soustraction d’entiers relatifs.</p>
+        <div><button class="btn primary" id="goUn">Ouvrir « Un seul calcul »</button></div>
+      </div>
+      <div class="card choice">
+        <h2>Plusieurs calculs</h2>
+        <p>Générer des exercices (amplitude réglable) et afficher la réécriture des soustractions après correction.</p>
+        <div><button class="btn primary" id="goPlusieurs">Ouvrir « Plusieurs calculs »</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Module : Un seul calcul -->
+  <section id="vue-un" class="card hidden" aria-label="Un seul calcul">
+    <div class="controls-un">
+      <div>
+        <label for="a">a</label>
+        <input id="a" type="number" value="0" />
+      </div>
+      <div>
+        <label for="operateur">opérateur</label>
+        <select id="operateur">
+          <option value="+">+</option>
+          <option value="-">-</option>
+        </select>
+      </div>
+      <div>
+        <label for="b">b</label>
+        <input id="b" type="number" value="0" />
+      </div>
+      <button id="btnTracer" class="btn primary">Tracer</button>
+      <button id="btnPNG" class="btn">Télécharger l’image</button>
+    </div>
+    <div class="zone-canvas" style="margin-top:.8rem">
+      <canvas id="cadre"></canvas>
+    </div>
+    <div class="footnote">
+      Astuce : pour une soustraction <strong>a − b</strong>, on avance de <strong>−b</strong> (flèche retournée).
+    </div>
+  </section>
+
+  <!-- Module : Plusieurs calculs -->
+  <section id="vue-plusieurs" class="card hidden" aria-label="Plusieurs calculs">
+    <div class="controls">
+      <div>
+        <label for="nb">Nombre d’exercices</label>
+        <input id="nb" type="number" min="1" max="200" value="10" />
+      </div>
+      <div>
+        <label for="min">Amplitude min</label>
+        <input id="min" type="number" value="-10" />
+      </div>
+      <div>
+        <label for="max">Amplitude max</label>
+        <input id="max" type="number" value="10" />
+      </div>
+      <button class="btn" id="btnGenerer">Générer</button>
+      <button class="btn primary" id="btnCalculer">Calculer</button>
+      <button class="btn ghost" id="btnVider">Tout effacer</button>
+    </div>
+
+    <div class="topline">
+      <span>Chrono :</span>
+      <span id="chrono" class="timer" aria-live="polite">00 min 00 s</span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="grille">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Expression</th>
+            <th>Réécriture (après « Calculer »)</th>
+            <th>Résultat &nbsp;<span style="color:var(--muted);font-weight:400">(Flèches →)</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr class="vide"><td colspan="4">Cliquez sur <em>Générer</em> pour créer des exercices.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footnote">
+      La réécriture n’est montrée que pour les <strong>soustractions</strong> et seulement après avoir cliqué sur <strong>Calculer</strong>.
+    </div>
+  </section>
+
+</div>
+
 <script>
-(() => {
-  const GREEN = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || "#06A64B";
-  const RED   = getComputedStyle(document.documentElement).getPropertyValue('--red').trim()   || "#F52A2A";
-  const INK   = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()   || "#101010";
+/* ==========================
+   Navigation (SPA)
+   ========================== */
+const vueAccueil   = document.getElementById('vue-accueil');
+const vueUn        = document.getElementById('vue-un');
+const vuePlusieurs = document.getElementById('vue-plusieurs');
+const btnAccueil   = document.getElementById('btnAccueil');
+const btnRetour    = document.getElementById('btnRetour');
+const titreAppli   = document.getElementById('titre-appli');
+const barre        = document.getElementById('barre');
 
-  const aInp = document.getElementById('a');
-  const bInp = document.getElementById('b');
-  const opSel= document.getElementById('op');
-  const btnDraw = document.getElementById('draw');
-  const btnClear= document.getElementById('clear');
-  const btnSave = document.getElementById('save');
-  const canvas  = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
+document.getElementById('goUn').addEventListener('click', ()=> aller('un'));
+document.getElementById('goPlusieurs').addEventListener('click', ()=> aller('plusieurs'));
+btnAccueil.addEventListener('click', ()=> { derniereOrigine=null; aller('accueil'); });
+btnRetour.addEventListener('click', ()=> { if(derniereOrigine==='plusieurs'){ aller('plusieurs'); window.scrollTo(0, scrollListeY||0); } });
 
-  // Layout (en px, calculés à chaque draw)
-  let W=0,H=0, DPR=1, MARGIN_L=60, MARGIN_R=40;
-  // Y fixes (en px, basées sur H)
-  let Y_TOP1, Y_TOP2, Y_AXIS, Y_BOTTOM;
-  let THICK, HEAD; // épaisseur flèche et longueur de pointe (px)
+let vueCourante='accueil';
+let derniereOrigine=null; // 'plusieurs' quand on vient de la liste
+let scrollListeY=0;
 
-  function resizeCanvas(){
-    DPR = window.devicePixelRatio || 1;
-    const cssW = canvas.clientWidth;
-    const cssH = canvas.clientHeight;
-    canvas.width  = Math.round(cssW * DPR);
-    canvas.height = Math.round(cssH * DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0); // repasser en coordonnées CSS
-    W = cssW; H = cssH;
+function aller(où){
+  vueCourante=où;
+  vueAccueil.classList.add('hidden');
+  vueUn.classList.add('hidden');
+  vuePlusieurs.classList.add('hidden');
+
+  barre.classList.toggle('show-home', où!=='accueil');
+  barre.classList.toggle('show-retour', où==='un' && derniereOrigine==='plusieurs');
+
+  if(où==='accueil'){ vueAccueil.classList.remove('hidden'); titreAppli.textContent='Relatifs — choisir un module'; }
+  else if(où==='un'){ vueUn.classList.remove('hidden'); titreAppli.textContent='Relatifs — un seul calcul'; }
+  else { vuePlusieurs.classList.remove('hidden'); titreAppli.textContent='Relatifs — plusieurs calculs'; }
+}
+
+/* ==========================
+   Utilitaires communs
+   ========================== */
+const SIGNE_MOINS = "−"; // U+2212 visuel
+const SIGNE_PLUS  = "+";
+
+const hasardEntier = (min,max)=> Math.floor(Math.random()*(max-min+1))+min;
+const formInt = (n)=> n<0 ? `(${n})` : `${n}`;
+const formExpr = (a,op,b)=> `${a} ${op==='+'?SIGNE_PLUS:SIGNE_MOINS} ${formInt(b)}`;
+const reEcritureSiMoins = (a,op,b)=> op==='-' ? `${a} ${SIGNE_PLUS} ${formInt(-b)}` : '';
+const valeur = (a,op,b)=> op==='+' ? a+b : a-b;
+
+/* ==========================
+   Module : Un seul calcul
+   ========================== */
+const champA = document.getElementById('a');
+const champB = document.getElementById('b');
+const champOp= document.getElementById('operateur');
+const btnTracer = document.getElementById('btnTracer');
+const btnPNG    = document.getElementById('btnPNG');
+const canvas    = document.getElementById('cadre');
+const ctx       = canvas.getContext('2d');
+
+let CW=0, CH=0, DPR=1, MGL=60, MGR=40;
+let Y_TOP1, Y_TOP2, Y_AXE, Y_BOT, EPAIS, TETE, echelle=1, xmin=0, xmax=0;
+
+function redimCanvas(){ DPR=window.devicePixelRatio||1; const w=canvas.clientWidth, h=canvas.clientHeight;
+  canvas.width=Math.round(w*DPR); canvas.height=Math.round(h*DPR); ctx.setTransform(DPR,0,0,DPR,0,0); CW=w; CH=h; }
+function efface(){ ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+function bornes(a,b,op){
+  const total = op==='+'?a+b:a-b, mn=Math.min(0,a,total), mx=Math.max(0,a,total);
+  const span=mx-mn+1, marge=Math.max(1,.15*span);
+  return { xmin:Math.floor(mn-marge), xmax:Math.ceil(mx+marge), total };
+}
+function ux(u){ return MGL + (u-xmin)*echelle; }
+
+function flechePentagone(x0,x1,y,couleur){
+  const L=Math.abs(x1-x0); if(L<1e-3)return; const tete=Math.min(TETE,.6*L), demi=EPAIS/2;
+  ctx.beginPath();
+  if(x1>=x0){ ctx.moveTo(x0,y-demi);ctx.lineTo(x0,y+demi);ctx.lineTo(x1-tete,y+demi);ctx.lineTo(x1,y);ctx.lineTo(x1-tete,y-demi); }
+  else { ctx.moveTo(x0,y-demi);ctx.lineTo(x0,y+demi);ctx.lineTo(x1+tete,y+demi);ctx.lineTo(x1,y);ctx.lineTo(x1+tete,y-demi); }
+  ctx.closePath(); ctx.fillStyle=couleur; ctx.fill();
+}
+function traceSegment(depart,valeur,y,retourne=false){
+  const VERT=getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||"#06A64B";
+  const ROUGE=getComputedStyle(document.documentElement).getPropertyValue('--red').trim()||"#F52A2A";
+  const sens=valeur>=0?1:-1, sensTrace=retourne?-sens:sens, L=Math.abs(valeur);
+  const x0=ux(depart), x1=ux(depart+sensTrace*L); flechePentagone(x0,x1,y,valeur>=0?VERT:ROUGE);
+  const cx=(x0+x1)/2; ctx.save(); ctx.translate(cx,y); if(retourne) ctx.rotate(Math.PI);
+  ctx.fillStyle="#000"; ctx.font=`bold ${Math.round(EPAIS*.9)}px system-ui,-apple-system,Segoe UI,Roboto,Arial`;
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(valeur>=0?String(Math.abs(valeur)):String(valeur),0,0); ctx.restore();
+  return depart+sensTrace*L;
+}
+function droiteGraduée(x0,x1){
+  ctx.strokeStyle="#000"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(ux(x0),Y_AXE); ctx.lineTo(ux(x1),Y_AXE); ctx.stroke();
+  ctx.lineWidth=2; ctx.font="14px system-ui,-apple-system,Segoe UI,Roboto,Arial"; ctx.textAlign="center"; ctx.textBaseline="top"; ctx.fillStyle="#111";
+  for(let x=Math.floor(x0); x<=Math.ceil(x1); x++){ const px=ux(x);
+    ctx.beginPath(); ctx.moveTo(px,Y_AXE-10); ctx.lineTo(px,Y_AXE+10); ctx.stroke(); ctx.fillText(String(x),px,Y_AXE+14); }
+}
+function pointillés(x,y0,y1){ ctx.save(); ctx.setLineDash([6,6]); ctx.strokeStyle="#666"; ctx.lineWidth=1.8;
+  ctx.beginPath(); ctx.moveTo(ux(x),y0); ctx.lineTo(ux(x),y1); ctx.stroke(); ctx.restore(); }
+function repères(a,total){ pointillés(0,Y_TOP1-EPAIS/2-2,Y_BOT+EPAIS/2+2); pointillés(a,Y_TOP1,Y_AXE); pointillés(total,Y_TOP2,Y_AXE); pointillés(total,Y_BOT,Y_AXE); }
+function texteExpr(a,b,op,total){ const droite=b>=0?`${b}`:`(${b})`, s=op==='+'?'+':'−'; return `${a} ${s} ${droite} = ${total}`; }
+function afficheTexte(expr){ ctx.fillStyle="#111"; ctx.font="bold 26px system-ui,-apple-system,Segoe UI,Roboto,Arial"; ctx.textAlign="left"; ctx.textBaseline="bottom"; ctx.fillText(expr,MGL,Y_TOP1-EPAIS/2-12); }
+
+function tracer(a,b,op){
+  redimCanvas(); efface();
+  EPAIS=Math.max(18,Math.round(CH*.07)); TETE=Math.max(20,Math.round(EPAIS*.8));
+  Y_TOP1=Math.round(CH*.22); Y_TOP2=Math.round(CH*.38); Y_AXE=Math.round(CH*.56); Y_BOT=Math.round(CH*.78);
+
+  const born=bornes(a,b,op); xmin=born.xmin; xmax=born.xmax;
+  echelle=(CW-MGL-MGR)/(xmax-xmin||1);
+
+  const total=op==='+'?a+b:a-b;
+  afficheTexte(texteExpr(a,b,op,total));
+  const fin1=traceSegment(0,a,Y_TOP1,false);
+  if(op==='+') traceSegment(fin1,b,Y_TOP2,false);
+  else         traceSegment(fin1,b,Y_TOP2,true);
+  droiteGraduée(xmin,xmax); repères(a,total); traceSegment(0,total,Y_BOT,false);
+}
+
+btnTracer.addEventListener('click', ()=>{
+  const a=parseInt(champA.value,10), b=parseInt(champB.value,10);
+  if(Number.isNaN(a)||Number.isNaN(b)){ alert('Saisir deux entiers.'); return; }
+  tracer(a,b,champOp.value);
+});
+btnPNG.addEventListener('click', ()=>{ const lien=document.createElement('a'); lien.download='relatifs.png'; lien.href=canvas.toDataURL('image/png'); lien.click(); });
+window.addEventListener('resize', ()=> { if(!vueUn.classList.contains('hidden')){ const a=parseInt(champA.value||0,10)||0, b=parseInt(champB.value||0,10)||0; tracer(a,b,champOp.value); } });
+
+/* ==========================
+   Module : Plusieurs calculs
+   ========================== */
+const champNb   = document.getElementById('nb');
+const champMin  = document.getElementById('min');
+const champMax  = document.getElementById('max');
+const btnGenerer= document.getElementById('btnGenerer');
+const btnCalculer= document.getElementById('btnCalculer');
+const btnVider  = document.getElementById('btnVider');
+const tbody     = document.getElementById('tbody');
+
+/* Chrono */
+let idChrono=null, secondes=0;
+const lblChrono=document.getElementById('chrono');
+const fmtT=(s)=>`${String(Math.floor(s/60)).padStart(2,'0')} min ${String(s%60).padStart(2,'0')} s`;
+function razChrono(){ if(idChrono){clearInterval(idChrono);idChrono=null} secondes=0; lblChrono.textContent=fmtT(secondes); }
+function goChrono(){ if(idChrono) return; idChrono=setInterval(()=>{secondes++; lblChrono.textContent=fmtT(secondes)},1000); }
+
+function bornesAmplitude(){
+  let vmin=Number(champMin.value), vmax=Number(champMax.value);
+  if(!Number.isFinite(vmin)) vmin=-10; if(!Number.isFinite(vmax)) vmax=10;
+  vmin=Math.max(-9999,Math.min(9999,Math.trunc(vmin)));
+  vmax=Math.max(-9999,Math.min(9999,Math.trunc(vmax)));
+  if(vmin>vmax) [vmin,vmax]=[vmax,vmin];
+  return {vmin,vmax};
+}
+
+function viderTable(){
+  tbody.innerHTML = `<tr class="vide"><td colspan="4">Cliquez sur <em>Générer</em> pour créer des exercices.</td></tr>`;
+  razChrono();
+}
+
+function generer(){
+  const n=Math.max(1,Math.min(200,Number(champNb.value)||10));
+  const {vmin,vmax}=bornesAmplitude();
+  const lignes=[];
+  for(let i=0;i<n;i++){
+    const a=hasardEntier(vmin,vmax);
+    const b=hasardEntier(vmin,vmax);
+    const op=(hasardEntier(0,1)===0)?'+':'-';
+    lignes.push({a,b,op});
   }
-
-  function clearCanvas(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-  }
-
-  function formatExpr(a,b,op,total){
-    if(op === '+'){
-      const right = (b >= 0) ? `${b}` : `(${b})`;
-      return `${a} + ${right} = ${total}`;
-    }else{
-      const right = (b >= 0) ? `${b}` : `(${b})`;
-      return `${a} - ${right} = ${total}`;
-    }
-  }
-
-  function computeBounds(a,b,op){
-    const total = (op === '+') ? (a + b) : (a - b);
-    const mn = Math.min(0, a, total);
-    const mx = Math.max(0, a, total);
-    const span = mx - mn + 1;
-    const pad = Math.max(1, 0.15*span);
-    const xmin = Math.floor(mn - pad);
-    const xmax = Math.ceil(mx + pad);
-    return {xmin, xmax, total};
-  }
-
-  // Mapping unité -> px
-  let scale=1, xmin=0, xmax=0;
-  function ux(u){ return MARGIN_L + (u - xmin)*scale; }
-
-  // Dessin flèche pentagone (x0->x1 en px, y centre en px)
-  function drawArrowPentagon(x0, x1, y, color){
-    const L = Math.abs(x1 - x0);
-    if(L <= 1e-3) return;
-    const head = Math.min(HEAD, 0.6*L);
-    const half = THICK/2;
-    ctx.beginPath();
-    if(x1 >= x0){
-      ctx.moveTo(x0,        y - half);
-      ctx.lineTo(x0,        y + half);
-      ctx.lineTo(x1 - head, y + half);
-      ctx.lineTo(x1,        y);
-      ctx.lineTo(x1 - head, y - half);
-    }else{
-      ctx.moveTo(x0,        y - half);
-      ctx.lineTo(x0,        y + half);
-      ctx.lineTo(x1 + head, y + half);
-      ctx.lineTo(x1,        y);
-      ctx.lineTo(x1 + head, y - half);
-    }
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-
-  // Carte : value en unités, start en unités, rotate180 si carte retournée
-  function drawCard(startU, value, yPx, rotate180=false){
-    const dir = (value >= 0) ? 1 : -1;
-    const drawSign = rotate180 ? -dir : dir;
-    const L = Math.abs(value);
-    const x0 = ux(startU);
-    const x1 = ux(startU + drawSign*L);
-    drawArrowPentagon(x0, x1, yPx, (value>=0?GREEN:RED));
-
-    // Label au centre (texte à l'envers si rotate)
-    const cx = (x0 + x1)/2;
-    ctx.save();
-    ctx.translate(cx, yPx);
-    if(rotate180){ ctx.rotate(Math.PI); }
-    // *** CHANGEMENT: texte blanc ***
-    ctx.fillStyle = "#fff";
-    ctx.font = `bold ${Math.round(THICK*0.9)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    const label = (value>=0) ? String(Math.abs(value)) : String(value);
-    ctx.fillText(label, 0, 0);
-    ctx.restore();
-
-    // fin VISUELLE (en unités)
-    return startU + drawSign*L;
-  }
-
-  function drawNumberLine(xminU, xmaxU){
-    // Axe horizontal
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(ux(xminU), Y_AXIS);
-    ctx.lineTo(ux(xmaxU), Y_AXIS);
-    ctx.stroke();
-
-    // Graduations entières
-    ctx.lineWidth = 2;
-    ctx.font = `14px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-    ctx.textAlign = "center"; ctx.textBaseline = "top";
-    for(let x=Math.floor(xminU); x<=Math.ceil(xmaxU); x++){
-      const px = ux(x);
-      ctx.beginPath();
-      ctx.moveTo(px, Y_AXIS-10);
-      ctx.lineTo(px, Y_AXIS+10);
-      ctx.stroke();
-      ctx.fillStyle = INK;
-      ctx.fillText(String(x), px, Y_AXIS+14);
-    }
-  }
-
-  function dashed(x, y0, y1){
-    ctx.save();
-    ctx.setLineDash([6,6]);
-    ctx.strokeStyle = "#666";
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(ux(x), y0);
-    ctx.lineTo(ux(x), y1);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawGuides(a, total){
-    // x=0 : colonne complète (au-dessus de la flèche 1 jusqu'au-dessous du résultat)
-    dashed(0, Y_TOP1 - THICK/2 - 2, Y_BOTTOM + THICK/2 + 2);
-    // x=a : de la pointe de la flèche 1 -> axe
-    dashed(a, Y_TOP1, Y_AXIS);
-    // x=total : de la pointe de la flèche 2 -> axe (haut)
-    dashed(total, Y_TOP2, Y_AXIS);
-    // x=total : de la pointe de la flèche résultat -> axe (bas)
-    dashed(total, Y_BOTTOM, Y_AXIS);
-  }
-
-  function drawExpr(expr){
-    // un peu au-dessus de la flèche 1
-    ctx.fillStyle = INK;
-    ctx.font = "bold 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.textAlign = "left"; ctx.textBaseline = "bottom";
-    ctx.fillText(expr, MARGIN_L, Y_TOP1 - THICK/2 - 12);
-  }
-
-  function render(a,b,op){
-    resizeCanvas();
-    clearCanvas();
-
-    // Layout vertical
-    THICK = Math.max(18, Math.round(H * 0.07));
-    HEAD  = Math.max(20, Math.round(THICK * 0.8));
-    Y_TOP1  = Math.round(H * 0.25);
-    Y_TOP2  = Math.round(H * 0.40);
-    Y_AXIS  = Math.round(H * 0.58);
-    Y_BOTTOM= Math.round(H * 0.78);
-
-    // Bornes et échelle
-    const {xmin: axMin, xmax: axMax, total} = computeBounds(a,b,op);
-    xmin=axMin; xmax=axMax;
-    scale = (W - MARGIN_L - MARGIN_R) / (xmax - xmin || 1);
-
-    // Expression
-    drawExpr(formatExpr(a,b,op,total));
-
-    // Flèches haut
-    const end1 = drawCard(0, a, Y_TOP1, false);
-    if(op === '+'){
-      drawCard(end1, b, Y_TOP2, false);
-    }else{
-      // soustraction = carte b retournée
-      drawCard(end1, b, Y_TOP2, true);
-    }
-
-    // Axe + graduations
-    drawNumberLine(xmin, xmax);
-
-    // Guides
-    drawGuides(a, (op==='+') ? (a+b) : (a-b));
-
-    // Flèche résultat (bas)
-    const totalVal = (op==='+') ? (a+b) : (a-b);
-    drawCard(0, totalVal, Y_BOTTOM, false);
-  }
-
-  // --- UI ----
-  btnDraw.addEventListener('click', () => {
-    if(aInp.value === "" || bInp.value === ""){
-      alert("Renseigne les deux termes a et b.");
-      return;
-    }
-    const a = parseInt(aInp.value,10);
-    const b = parseInt(bInp.value,10);
-    if(Number.isNaN(a) || Number.isNaN(b)){
-      alert("Saisir deux entiers (ex. a=5, b=-3).");
-      return;
-    }
-    render(a,b,opSel.value);
+  tbody.innerHTML='';
+  lignes.forEach((r,idx)=>{
+    const tr=document.createElement('tr');
+    tr.dataset.a=String(r.a); tr.dataset.b=String(r.b); tr.dataset.op=r.op;
+    tr.innerHTML=`
+      <td class="row-num">${idx+1}</td>
+      <td class="mono">${formExpr(r.a,r.op,r.b)}</td>
+      <td class="mono" data-rewrite="attente"></td>
+      <td class="mono result-cell" data-result="attente">
+        <span class="result">—</span>
+        <button class="see-btn" title="Voir sur la droite graduée">Flèches →</button>
+      </td>`;
+    tbody.appendChild(tr);
   });
+  razChrono(); goChrono();
+}
 
-  btnClear.addEventListener('click', () => {
-    aInp.value = "";
-    bInp.value = "";
-    clearCanvas();
+function calculer(){
+  [...tbody.querySelectorAll('tr')].forEach(tr=>{
+    if(!tr.dataset || tr.classList.contains('vide')) return;
+    const a=Number(tr.dataset.a), b=Number(tr.dataset.b), op=tr.dataset.op;
+    const rw=reEcritureSiMoins(a,op,b), res=valeur(a,op,b);
+    tr.children[2].textContent = rw; // vide pour +
+    tr.querySelector('.result').textContent = String(res);
   });
+}
 
-  btnSave.addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'relatifs.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  });
+/* Aller vers "Un seul calcul" depuis une ligne — et permettre retour à la liste */
+tbody.addEventListener('click', (e)=>{
+  const btn=e.target.closest('.see-btn'); if(!btn) return;
+  const tr=btn.closest('tr'); if(!tr) return;
+  const a=Number(tr.dataset.a), b=Number(tr.dataset.b), op=tr.dataset.op;
+  champA.value=String(a); champB.value=String(b); champOp.value=op;
+  derniereOrigine='plusieurs';
+  scrollListeY = window.scrollY || 0;
+  aller('un'); tracer(a,b,op);
+});
 
-  // Redessin si la fenêtre change (si un tracé existe)
-  let lastParams = null;
-  new ResizeObserver(() => {
-    if(aInp.value !== "" && bInp.value !== ""){
-      const a = parseInt(aInp.value,10);
-      const b = parseInt(bInp.value,10);
-      if(!Number.isNaN(a) && !Number.isNaN(b)){
-        render(a,b,opSel.value);
-      }else{
-        resizeCanvas(); clearCanvas();
-      }
-    }else{
-      resizeCanvas(); clearCanvas();
-    }
-  }).observe(canvas);
+btnGenerer.addEventListener('click', generer);
+btnCalculer.addEventListener('click', calculer);
+btnVider.addEventListener('click', viderTable);
 
-  // init canvas taille
-  resizeCanvas(); clearCanvas();
-})();
+/* Démarrage sur l’accueil */
+aller('accueil');
 </script>
 </body>
 </html>
