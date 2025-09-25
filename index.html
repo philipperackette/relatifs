@@ -42,7 +42,7 @@
 
   /* Modules */
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:.75rem;align-items:end}
-  .controls-un{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:.75rem;align-items:end}
+  .controls-un{display:grid;grid-template-columns:1fr 1fr 1fr auto auto auto;gap:.75rem;align-items:end}
   .topline{display:flex;align-items:center;gap:.75rem;margin:.5rem 0 0;color:var(--muted)}
   .timer{font-weight:700;color:#111827;padding:.2rem .55rem;border:1px solid var(--border);border-radius:999px}
 
@@ -122,6 +122,7 @@
         <input id="b" type="number" value="0" />
       </div>
       <button id="btnTracer" class="btn primary">Tracer</button>
+      <button id="btnEffacer" class="btn">Effacer</button>
       <button id="btnPNG" class="btn">Télécharger l’image</button>
     </div>
     <div class="zone-canvas" style="margin-top:.8rem">
@@ -192,13 +193,20 @@ const btnRetour    = document.getElementById('btnRetour');
 const titreAppli   = document.getElementById('titre-appli');
 const barre        = document.getElementById('barre');
 
-document.getElementById('goUn').addEventListener('click', ()=> aller('un'));
-document.getElementById('goPlusieurs').addEventListener('click', ()=> aller('plusieurs'));
+document.getElementById('goUn').addEventListener('click', ()=> { derniereOrigine=null; aller('un'); });
+document.getElementById('goPlusieurs').addEventListener('click', ()=> { aller('plusieurs'); });
 btnAccueil.addEventListener('click', ()=> { derniereOrigine=null; aller('accueil'); });
-btnRetour.addEventListener('click', ()=> { if(derniereOrigine==='plusieurs'){ aller('plusieurs'); window.scrollTo(0, scrollListeY||0); } });
+btnRetour.addEventListener('click', ()=> {
+  if(derniereOrigine==='plusieurs'){
+    // revenir à la liste et réactiver Accueil
+    derniereOrigine = null;
+    aller('plusieurs');
+    window.scrollTo(0, scrollListeY||0);
+  }
+});
 
 let vueCourante='accueil';
-let derniereOrigine=null; // 'plusieurs' quand on vient de la liste
+let derniereOrigine=null; // 'plusieurs' quand on vient de la liste vers "un"
 let scrollListeY=0;
 
 function aller(où){
@@ -207,8 +215,10 @@ function aller(où){
   vueUn.classList.add('hidden');
   vuePlusieurs.classList.add('hidden');
 
-  barre.classList.toggle('show-home', où!=='accueil');
-  barre.classList.toggle('show-retour', où==='un' && derniereOrigine==='plusieurs');
+  // Accueil masqué si on est dans "un" ET qu'on vient de "plusieurs"
+  const hideAccueil = (où==='un' && derniereOrigine==='plusieurs');
+  barre.classList.toggle('show-home', (où!=='accueil') && !hideAccueil);
+  barre.classList.toggle('show-retour', où==='un' && (derniereOrigine==='plusieurs'));
 
   if(où==='accueil'){ vueAccueil.classList.remove('hidden'); titreAppli.textContent='Relatifs — choisir un module'; }
   else if(où==='un'){ vueUn.classList.remove('hidden'); titreAppli.textContent='Relatifs — un seul calcul'; }
@@ -234,6 +244,7 @@ const champA = document.getElementById('a');
 const champB = document.getElementById('b');
 const champOp= document.getElementById('operateur');
 const btnTracer = document.getElementById('btnTracer');
+const btnEffacer= document.getElementById('btnEffacer');
 const btnPNG    = document.getElementById('btnPNG');
 const canvas    = document.getElementById('cadre');
 const ctx       = canvas.getContext('2d');
@@ -301,6 +312,12 @@ btnTracer.addEventListener('click', ()=>{
   const a=parseInt(champA.value,10), b=parseInt(champB.value,10);
   if(Number.isNaN(a)||Number.isNaN(b)){ alert('Saisir deux entiers.'); return; }
   tracer(a,b,champOp.value);
+});
+btnEffacer.addEventListener('click', ()=>{
+  // Remet à zéro et efface le tracé
+  champA.value = '0';
+  champB.value = '0';
+  redimCanvas(); efface();
 });
 btnPNG.addEventListener('click', ()=>{ const lien=document.createElement('a'); lien.download='relatifs.png'; lien.href=canvas.toDataURL('image/png'); lien.click(); });
 window.addEventListener('resize', ()=> { if(!vueUn.classList.contains('hidden')){ const a=parseInt(champA.value||0,10)||0, b=parseInt(champB.value||0,10)||0; tracer(a,b,champOp.value); } });
@@ -374,7 +391,7 @@ function calculer(){
   });
 }
 
-/* Aller vers "Un seul calcul" depuis une ligne — et permettre retour à la liste */
+/* Aller vers "Un seul calcul" depuis une ligne — et forcer le retour par la liste */
 tbody.addEventListener('click', (e)=>{
   const btn=e.target.closest('.see-btn'); if(!btn) return;
   const tr=btn.closest('tr'); if(!tr) return;
