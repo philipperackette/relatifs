@@ -26,7 +26,9 @@
 
   /* Boutons / entrées */
   label{font-size:.92rem;color:var(--muted);display:block}
-  input[type="number"],select{width:100%;padding:.7rem .8rem;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--ink)}
+  input[type="number"],input[type="text"],select{
+    width:100%;padding:.7rem .8rem;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--ink)
+  }
   .btn{padding:.7rem 1rem;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--ink);
        cursor:pointer;transition:box-shadow .15s ease,transform .05s ease;white-space:nowrap;min-height:44px}
   .btn:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
@@ -67,6 +69,12 @@
   .ok{color:#0a7a35}
   .bad{color:#c62828}
   .warn{color:#b26a00}
+
+  /* Correctif iPhone — champ réponse + bouton ± */
+  .ans-wrap{display:flex;gap:.35rem;align-items:center}
+  .btn-mini{padding:.4rem .55rem;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer}
+  .btn-mini:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .invalid{outline:2px solid #c62828}
 
   /* Mobile */
   @media (max-width: 980px){
@@ -496,6 +504,17 @@ const dFmt=(s)=>`${String(Math.floor(s/60)).padStart(2,'0')} min ${String(s%60).
 function dRaz(){ if(dTimerId){clearInterval(dTimerId); dTimerId=null} dSecs=0; dChrono.textContent=dFmt(dSecs); }
 function dGo(){ if(dTimerId) return; dTimerId=setInterval(()=>{ dSecs++; dChrono.textContent=dFmt(dSecs); },1000); }
 
+/* Validation/lecture robustes pour iPhone (type="text") */
+function readIntFromInput(inp){
+  const raw = (inp.value ?? '').trim();
+  if(raw === '' || !/^[-+]?\d+$/.test(raw)) return NaN;
+  return parseInt(raw, 10);
+}
+function markValidity(inp){
+  const ok = /^[-+]?\d+$/.test((inp.value ?? '').trim());
+  inp.classList.toggle('invalid', !ok && (inp.value ?? '') !== '');
+}
+
 function bornesDiag(){
   let vmin=Number(dMin.value), vmax=Number(dMax.value);
   if(!Number.isFinite(vmin)) vmin=-9; if(!Number.isFinite(vmax)) vmax=9;
@@ -510,12 +529,19 @@ function dRenderEmpty(){
 }
 
 function dRow(i,a,op,b){
+  /* Champ de réponse en type="text" + inputmode="numeric" + bouton ± */
   return `
     <tr data-a="${a}" data-op="${op}" data-b="${b}">
       <td class="row-num">${i+1}</td>
       <td class="mono">${formExpr(a,op,b)}</td>
       <td class="mono rew"></td>
-      <td><input type="number" class="ans" inputmode="numeric" style="min-width:90px" /></td>
+      <td>
+        <div class="ans-wrap">
+          <input type="text" class="ans" inputmode="numeric" pattern="^-?[0-9]+$"
+                 autocomplete="off" autocorrect="off" spellcheck="false" style="min-width:90px" />
+          <button type="button" class="btn-mini btn-sign" title="Positif/négatif">±</button>
+        </div>
+      </td>
       <td class="mono res">—</td>
       <td class="diag"></td>
     </tr>
@@ -594,18 +620,19 @@ function dApply(showSolutions=false){
     const a=Number(tr.dataset.a), b=Number(tr.dataset.b), op=tr.dataset.op;
     const inp = tr.querySelector('.ans');
     if(showSolutions){ inp.value = valeur(a,op,b); }
-    const s = Number(inp.value);
+    markValidity(inp);
+    const s = readIntFromInput(inp);
     const r = valeur(a,op,b);
     const rw = reEcritureSiMoins(a,op,b);
 
     tr.querySelector('.rew').textContent = rw;
     tr.querySelector('.res').textContent = r;
 
-    const report = dDiag(a,op,b, Number(inp.value));
+    const report = dDiag(a,op,b, s);
     const diagCell = tr.querySelector('.diag');
     diagCell.innerHTML = `<span class="${report.tone}">${report.text}</span>`;
 
-    if(Number(inp.value)===r) ok++; else bad++;
+    if(s===r) ok++; else bad++;
   });
   dOk.textContent=ok; dBad.textContent=bad;
 }
@@ -614,6 +641,23 @@ dGen.addEventListener('click', dGenerate);
 dCorr.addEventListener('click', ()=>{ if(dTbody.querySelector('.vide')) return; dApply(false); });
 dShow.addEventListener('click', ()=>{ if(dTbody.querySelector('.vide')) return; dApply(true); });
 dClear.addEventListener('click', dRenderEmpty);
+
+/* Bouton ± et validation live dans le 3e module */
+dTbody.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.btn-sign');
+  if(!btn) return;
+  const inp = btn.parentElement.querySelector('.ans');
+  let v = (inp.value ?? '').trim();
+  if(v === '') { inp.value = '-'; inp.focus(); markValidity(inp); return; }
+  if(v.startsWith('-')) inp.value = v.slice(1);
+  else inp.value = '-' + v;
+  markValidity(inp);
+});
+dTbody.addEventListener('input', (e)=>{
+  const inp = e.target.closest('.ans');
+  if(!inp) return;
+  markValidity(inp);
+});
 
 /* Démarrage sur l’accueil */
 aller('accueil');
