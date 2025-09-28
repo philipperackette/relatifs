@@ -36,6 +36,7 @@
 
   /* Accueil */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
   .choice{display:flex;flex-direction:column;gap:.75rem}
   .choice h2{margin:.25rem 0}
   .choice p{color:var(--muted);margin:0}
@@ -43,6 +44,7 @@
   /* Modules */
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:.75rem;align-items:end}
   .controls-un{display:grid;grid-template-columns:1fr 1fr 1fr auto auto auto;gap:.75rem;align-items:end}
+  .controls-diag{display:grid;grid-template-columns:1fr 1fr 1fr auto auto auto;gap:.75rem;align-items:end}
   .topline{display:flex;align-items:center;gap:.75rem;margin:.5rem 0 0;color:var(--muted)}
   .timer{font-weight:700;color:#111827;padding:.2rem .55rem;border:1px solid var(--border);border-radius:999px}
 
@@ -56,16 +58,24 @@
   .footnote{margin-top:.75rem;font-size:.88rem;color:var(--muted)}
   .see-btn{font-size:.85rem;padding:.4rem .6rem;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;min-height:38px}
   .see-btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .pill{display:inline-block;padding:.2rem .6rem;border:1px solid var(--border);border-radius:999px}
 
   /* Canvas du module "Un calcul" */
   .zone-canvas{height:420px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
   canvas{width:100%;height:100%;display:block;background:#fff}
 
+  .ok{color:#0a7a35}
+  .bad{color:#c62828}
+  .warn{color:#b26a00}
+
   /* Mobile */
+  @media (max-width: 980px){
+    .grid3{grid-template-columns:1fr 1fr}
+  }
   @media (max-width: 820px){
     body{padding:1rem}
     .grid2{grid-template-columns:1fr}
-    .controls,.controls-un{grid-template-columns:1fr 1fr}
+    .controls,.controls-un,.controls-diag{grid-template-columns:1fr 1fr}
     .btn{width:100%}
   }
   @media (max-width: 420px){
@@ -89,7 +99,7 @@
 
   <!-- Accueil -->
   <section id="vue-accueil" class="card">
-    <div class="grid2">
+    <div class="grid3">
       <div class="card choice">
         <h2>Un seul calcul</h2>
         <p>Tracer sur une droite graduée l’addition ou la soustraction d’entiers relatifs.</p>
@@ -99,6 +109,11 @@
         <h2>Plusieurs calculs</h2>
         <p>Générer des exercices (amplitude réglable) et afficher la réécriture des soustractions après correction.</p>
         <div><button class="btn primary" id="goPlusieurs">Ouvrir « Plusieurs calculs »</button></div>
+      </div>
+      <div class="card choice">
+        <h2>Je réponds & diagnostic</h2>
+        <p>L’élève saisit sa réponse, puis le module corrige, réécrit et propose un diagnostic d’erreur probable.</p>
+        <div><button class="btn primary" id="goDiagnostic">Ouvrir « Je réponds & diagnostic »</button></div>
       </div>
     </div>
   </section>
@@ -179,26 +194,79 @@
     </div>
   </section>
 
+  <!-- Module : Je réponds & diagnostic -->
+  <section id="vue-diagnostic" class="card hidden" aria-label="Je réponds & diagnostic">
+    <div class="controls-diag">
+      <div>
+        <label for="d-nb">Nombre d’exercices</label>
+        <input id="d-nb" type="number" min="1" max="50" value="8" />
+      </div>
+      <div>
+        <label for="d-min">Amplitude min</label>
+        <input id="d-min" type="number" value="-9" />
+      </div>
+      <div>
+        <label for="d-max">Amplitude max</label>
+        <input id="d-max" type="number" value="9" />
+      </div>
+      <button id="d-gen" class="btn">Générer</button>
+      <button id="d-corr" class="btn primary">Corriger</button>
+      <button id="d-clear" class="btn ghost">Tout effacer</button>
+    </div>
+
+    <div class="topline">
+      <span>Chrono :</span>
+      <span id="d-chrono" class="timer" aria-live="polite">00 min 00 s</span>
+      <span class="pill" style="margin-left:auto"><span id="d-ok">0</span> justes</span>
+      <span class="pill"><span id="d-bad">0</span> à revoir</span>
+      <button id="d-show" class="btn" style="margin-left:.5rem">Montrer toutes les solutions</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="d-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Expression</th>
+            <th>Réécriture (après correction)</th>
+            <th>Votre réponse</th>
+            <th>Résultat</th>
+            <th>Diagnostic</th>
+          </tr>
+        </thead>
+        <tbody id="d-tbody">
+          <tr class="vide"><td colspan="6">Cliquez sur <em>Générer</em> pour créer des exercices.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footnote">
+      Astuce : <code>a − b = a + (−b)</code>. Si <code>b</code> est négatif, <code>a − (−b) = a + b</code> (double signe).
+    </div>
+  </section>
+
 </div>
 
 <script>
 /* ==========================
    Navigation (SPA)
    ========================== */
-const vueAccueil   = document.getElementById('vue-accueil');
-const vueUn        = document.getElementById('vue-un');
-const vuePlusieurs = document.getElementById('vue-plusieurs');
-const btnAccueil   = document.getElementById('btnAccueil');
-const btnRetour    = document.getElementById('btnRetour');
-const titreAppli   = document.getElementById('titre-appli');
-const barre        = document.getElementById('barre');
+const vueAccueil     = document.getElementById('vue-accueil');
+const vueUn          = document.getElementById('vue-un');
+const vuePlusieurs   = document.getElementById('vue-plusieurs');
+const vueDiagnostic  = document.getElementById('vue-diagnostic');
+const btnAccueil     = document.getElementById('btnAccueil');
+const btnRetour      = document.getElementById('btnRetour');
+const titreAppli     = document.getElementById('titre-appli');
+const barre          = document.getElementById('barre');
 
 document.getElementById('goUn').addEventListener('click', ()=> { derniereOrigine=null; aller('un'); });
 document.getElementById('goPlusieurs').addEventListener('click', ()=> { aller('plusieurs'); });
+document.getElementById('goDiagnostic').addEventListener('click', ()=> { aller('diagnostic'); });
+
 btnAccueil.addEventListener('click', ()=> { derniereOrigine=null; aller('accueil'); });
 btnRetour.addEventListener('click', ()=> {
   if(derniereOrigine==='plusieurs'){
-    // revenir à la liste et réactiver Accueil
     derniereOrigine = null;
     aller('plusieurs');
     window.scrollTo(0, scrollListeY||0);
@@ -214,14 +282,15 @@ function aller(où){
   vueAccueil.classList.add('hidden');
   vueUn.classList.add('hidden');
   vuePlusieurs.classList.add('hidden');
+  vueDiagnostic.classList.add('hidden');
 
-  // Accueil masqué si on est dans "un" ET qu'on vient de "plusieurs"
   const hideAccueil = (où==='un' && derniereOrigine==='plusieurs');
   barre.classList.toggle('show-home', (où!=='accueil') && !hideAccueil);
   barre.classList.toggle('show-retour', où==='un' && (derniereOrigine==='plusieurs'));
 
   if(où==='accueil'){ vueAccueil.classList.remove('hidden'); titreAppli.textContent='Relatifs — choisir un module'; }
   else if(où==='un'){ vueUn.classList.remove('hidden'); titreAppli.textContent='Relatifs — un seul calcul'; }
+  else if(où==='diagnostic'){ vueDiagnostic.classList.remove('hidden'); titreAppli.textContent='Relatifs — je réponds & diagnostic'; }
   else { vuePlusieurs.classList.remove('hidden'); titreAppli.textContent='Relatifs — plusieurs calculs'; }
 }
 
@@ -314,7 +383,6 @@ btnTracer.addEventListener('click', ()=>{
   tracer(a,b,champOp.value);
 });
 btnEffacer.addEventListener('click', ()=>{
-  // Remet à zéro et efface le tracé
   champA.value = '0';
   champB.value = '0';
   redimCanvas(); efface();
@@ -324,6 +392,7 @@ window.addEventListener('resize', ()=> { if(!vueUn.classList.contains('hidden'))
 
 /* ==========================
    Module : Plusieurs calculs
+   (opérateur aléatoire + ou −)
    ========================== */
 const champNb   = document.getElementById('nb');
 const champMin  = document.getElementById('min');
@@ -361,7 +430,7 @@ function generer(){
   for(let i=0;i<n;i++){
     const a=hasardEntier(vmin,vmax);
     const b=hasardEntier(vmin,vmax);
-    const op=(hasardEntier(0,1)===0)?'+':'-';
+    const op=(hasardEntier(0,1)===0)?'+':'-'; // ALÉATOIRE
     lignes.push({a,b,op});
   }
   tbody.innerHTML='';
@@ -405,6 +474,146 @@ tbody.addEventListener('click', (e)=>{
 btnGenerer.addEventListener('click', generer);
 btnCalculer.addEventListener('click', calculer);
 btnVider.addEventListener('click', viderTable);
+
+/* ==========================
+   Module : Je réponds & diagnostic
+   (opérateur aléatoire + ou −)
+   ========================== */
+const dNb     = document.getElementById('d-nb');
+const dMin    = document.getElementById('d-min');
+const dMax    = document.getElementById('d-max');
+const dGen    = document.getElementById('d-gen');
+const dCorr   = document.getElementById('d-corr');
+const dClear  = document.getElementById('d-clear');
+const dShow   = document.getElementById('d-show');
+const dTbody  = document.getElementById('d-tbody');
+const dChrono = document.getElementById('d-chrono');
+const dOk     = document.getElementById('d-ok');
+const dBad    = document.getElementById('d-bad');
+
+let dTimerId=null, dSecs=0;
+const dFmt=(s)=>`${String(Math.floor(s/60)).padStart(2,'0')} min ${String(s%60).padStart(2,'0')} s`;
+function dRaz(){ if(dTimerId){clearInterval(dTimerId); dTimerId=null} dSecs=0; dChrono.textContent=dFmt(dSecs); }
+function dGo(){ if(dTimerId) return; dTimerId=setInterval(()=>{ dSecs++; dChrono.textContent=dFmt(dSecs); },1000); }
+
+function bornesDiag(){
+  let vmin=Number(dMin.value), vmax=Number(dMax.value);
+  if(!Number.isFinite(vmin)) vmin=-9; if(!Number.isFinite(vmax)) vmax=9;
+  vmin=Math.trunc(vmin); vmax=Math.trunc(vmax);
+  if(vmin>vmax) [vmin,vmax]=[vmax,vmin];
+  return {vmin,vmax};
+}
+
+function dRenderEmpty(){
+  dTbody.innerHTML = `<tr class="vide"><td colspan="6">Cliquez sur <em>Générer</em> pour créer des exercices.</td></tr>`;
+  dOk.textContent='0'; dBad.textContent='0'; dRaz();
+}
+
+function dRow(i,a,op,b){
+  return `
+    <tr data-a="${a}" data-op="${op}" data-b="${b}">
+      <td class="row-num">${i+1}</td>
+      <td class="mono">${formExpr(a,op,b)}</td>
+      <td class="mono rew"></td>
+      <td><input type="number" class="ans" inputmode="numeric" style="min-width:90px" /></td>
+      <td class="mono res">—</td>
+      <td class="diag"></td>
+    </tr>
+  `;
+}
+
+function dGenerate(){
+  const n=Math.max(1,Math.min(50,Number(dNb.value)||8));
+  const {vmin,vmax}=bornesDiag();
+  const rows=[];
+  for(let i=0;i<n;i++){
+    const a=hasardEntier(vmin,vmax);
+    const b=hasardEntier(vmin,vmax);
+    const op=(hasardEntier(0,1)===0)?'+':'-'; // ALÉATOIRE
+    rows.push(dRow(i,a,op,b));
+  }
+  dTbody.innerHTML = rows.join('');
+  dOk.textContent='0'; dBad.textContent='0'; dRaz(); dGo();
+}
+
+function sign(x){return x<0?-1:(x>0?1:0)}
+function abs(x){return Math.abs(x)}
+
+function dDiag(a,op,b, s){ // s = réponse élève (Number) ou NaN
+  const correct = valeur(a,op,b);
+  const hasAns = Number.isFinite(s);
+
+  if(!hasAns) return { text:'Aucune réponse saisie.', tone:'warn' };
+  if(s === correct) return { text:'✅ Correct', tone:'ok' };
+
+  const diag=[];
+  let matched=false;
+
+  // Inversion d'ordre pour soustraction
+  if(op==='-' && s === (b - a)){ diag.push("Inversion de la soustraction : b − a au lieu de a − b."); matched=true; }
+
+  // Double signe oublié : a - (-b) traité comme a - b
+  if(op==='-' && b<0 && s === (a - abs(b))){ diag.push("Double signe oublié : a − (−b) = a + b."); matched=true; }
+
+  // Confusion signe opération/nombre
+  if(op==='-' && b<0 && s === (a - b)){ diag.push("Confusion : a − (−b) n’est pas a − b."); matched=true; }
+
+  // Sur-généralisation : “toute soustraction négative”
+  if(op==='-' && correct>=0 && s<0){ diag.push("Sur-généralisation : tu penses que toute soustraction donne un négatif."); matched=true; }
+
+  // Règle “signe du plus grand” mal appliquée (addition au lieu de différence)
+  const mix = (a>=0 && b<0) || (a<0 && b>=0);
+  const signOfLarger = abs(a)===abs(b) ? 0 : (abs(a)>abs(b)?sign(a):sign(b));
+  if(mix && s === (signOfLarger * (abs(a)+abs(b)))){
+    diag.push("Règle du signe du plus grand mal appliquée : tu as additionné les valeurs absolues au lieu de faire leur différence.");
+    matched=true;
+  }
+
+  // Sur-généralisation de formules : −a − (−b) → −(a+b)
+  if(a<0 && op==='-' && b<0 && s === (-(abs(a)+abs(b)))){
+    diag.push("Sur-généralisation : tu as appliqué −a − b = −(a+b) à −a − (−b). Ici, −(−b)=+b.");
+    matched=true;
+  }
+
+  // Erreurs liées à 0
+  if(a===0 && op==='-' && b<0 && s===0){ diag.push("Erreur sur 0 : 0 − (−b) = +b, pas 0."); matched=true; }
+  if(a===0 && op==='+' && b<0 && s===abs(b)){ diag.push("Erreur sur 0 : 0 + (−b) = −b, pas +|b|."); matched=true; }
+
+  // Glissade arithmétique (petit écart)
+  if(!matched && Math.abs(s - correct) <= 2){ diag.push("Glissade arithmétique probable : attention au calcul."); matched=true; }
+
+  if(!matched){ diag.push("Révision nécessaire : revois la réécriture et la règle des signes."); }
+
+  return { text: diag.join(' '), tone: matched ? 'bad' : 'warn', correct };
+}
+
+function dApply(showSolutions=false){
+  let ok=0, bad=0;
+  [...dTbody.querySelectorAll('tr')].forEach(tr=>{
+    if(tr.classList.contains('vide')) return;
+    const a=Number(tr.dataset.a), b=Number(tr.dataset.b), op=tr.dataset.op;
+    const inp = tr.querySelector('.ans');
+    if(showSolutions){ inp.value = valeur(a,op,b); }
+    const s = Number(inp.value);
+    const r = valeur(a,op,b);
+    const rw = reEcritureSiMoins(a,op,b);
+
+    tr.querySelector('.rew').textContent = rw;
+    tr.querySelector('.res').textContent = r;
+
+    const report = dDiag(a,op,b, Number(inp.value));
+    const diagCell = tr.querySelector('.diag');
+    diagCell.innerHTML = `<span class="${report.tone}">${report.text}</span>`;
+
+    if(Number(inp.value)===r) ok++; else bad++;
+  });
+  dOk.textContent=ok; dBad.textContent=bad;
+}
+
+dGen.addEventListener('click', dGenerate);
+dCorr.addEventListener('click', ()=>{ if(dTbody.querySelector('.vide')) return; dApply(false); });
+dShow.addEventListener('click', ()=>{ if(dTbody.querySelector('.vide')) return; dApply(true); });
+dClear.addEventListener('click', dRenderEmpty);
 
 /* Démarrage sur l’accueil */
 aller('accueil');
