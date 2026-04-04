@@ -2,56 +2,83 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Démo en ligne :** https://philipperackette.github.io/relatifs/
+> **Démo en ligne / Live demo:** https://philipperackette.github.io/relatifs/
 
-Application web interactive pour travailler les **additions et soustractions d'entiers relatifs** au collège. Tout est contenu dans un seul fichier HTML — aucune installation nécessaire.
+## Français
 
----
+Application web interactive pour travailler les **additions et soustractions d'entiers relatifs** au collège, avec visualisation, génération d'exercices et diagnostic d'erreurs.
 
-## Modules disponibles
+### Modules disponibles
 
-### Un seul calcul
-Tracer sur une **droite graduée** l'addition ou la soustraction d'entiers relatifs. L'élève visualise le déplacement sur la droite et comprend le sens de l'opération.
+#### Un seul calcul
+Tracer sur une **droite graduée** l'addition ou la soustraction d'entiers relatifs.
 
-### Plusieurs calculs
-Générer une série d'exercices avec une **amplitude réglable**, puis afficher la réécriture des soustractions après correction. Idéal pour une séance d'entraînement ou une évaluation rapide.
+#### Plusieurs calculs
+Générer une série d'exercices avec une **amplitude réglable**, puis afficher la correction.
 
-### Je réponds & diagnostic
-L'élève saisit sa réponse, puis le module **corrige automatiquement**, réécrit l'opération et propose un **diagnostic d'erreur probable** (confusion de signe, erreur de réécriture, etc.).
+#### Je réponds & diagnostic
+Saisir une réponse, obtenir une correction automatique et un **diagnostic d'erreur probable**.
 
----
+### Utilisation
 
-## Utilisation
+#### En ligne
+Ouvrir directement :
+https://philipperackette.github.io/relatifs/
 
-### En ligne (recommandé)
-
-Ouvrir directement : https://philipperackette.github.io/relatifs/
-
-### En local
+#### En local
 
 ```bash
 git clone https://github.com/philipperackette/relatifs.git
 cd relatifs
-# Ouvrir index.html dans un navigateur (double-clic ou glisser-déposer)
+# Ouvrir index.html dans un navigateur
 ```
 
-Aucun serveur web ni dépendance n'est nécessaire : tout est purement côté client.
+### Public visé
+
+- élèves de collège,
+- enseignants de mathématiques,
+- remédiation sur les nombres relatifs.
 
 ---
 
-## Public visé
+## English
 
-Enseignants de mathématiques et élèves de **5e / 4e** (cycle 4), ou tout contexte de remédiation sur les nombres relatifs.
+Interactive web application for practicing **addition and subtraction of signed integers**, with visualization, exercise generation, and error diagnosis.
+
+### Available modules
+
+#### Single calculation
+Display an addition or subtraction on a **number line**.
+
+#### Multiple calculations
+Generate a series of exercises with adjustable range, then display the correction.
+
+#### Answer & diagnosis
+Enter an answer, get automatic correction, and receive a **probable error diagnosis**.
+
+### Usage
+
+#### Online
+Open directly:
+https://philipperackette.github.io/relatifs/
+
+#### Local
+
+```bash
+git clone https://github.com/philipperackette/relatifs.git
+cd relatifs
+# Open index.html in a browser
+```
+
+### Intended audience
+
+- middle school students,
+- mathematics teachers,
+- remediation activities on signed numbers.
 
 ---
 
-## Contenu du dépôt
+## Licence / License
 
-- `index.html` — application complète (HTML / CSS / JavaScript)
-- `README.md` — ce fichier
-
----
-
-## Licence
-
-Ce projet est distribué sous licence [MIT](LICENSE).
+Ce projet est distribué sous licence [MIT](LICENSE).  
+This project is distributed under the [MIT License](LICENSE).
