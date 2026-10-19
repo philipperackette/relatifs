@@ -1,6 +1,6 @@
-# Relatifs — Calcul interactif sur les nombres relatifs
+[![CI](https://github.com/philipperackette/relatifs/actions/workflows/ci.yml/badge.svg)](https://github.com/philipperackette/relatifs/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+# Relatifs — Calcul interactif sur les nombres relatifs
 
 > **Démo en ligne / Live demo:** https://philipperackette.github.io/relatifs/
 
@@ -75,6 +75,20 @@ cd relatifs
 - middle school students,
 - mathematics teachers,
 - remediation activities on signed numbers.
+
+---
+
+## Vérifications automatiques / Automated checks
+
+À chaque push et pull request, GitHub Actions lance ESLint et HTMLHint sur `index.html`, puis des tests Playwright des trois modules dans Chromium (écran d’ordinateur et de téléphone). Le site n’a toujours aucune dépendance : `package.json` ne sert qu’à ces vérifications.  
+On every push and pull request, GitHub Actions runs ESLint and HTMLHint on `index.html`, then Playwright tests of the three modules in Chromium (desktop and phone screens). The site itself still has no dependencies: `package.json` is only used for these checks.
+
+```bash
+npm ci
+npm run lint
+npx playwright install chromium
+npm test
+```
 
 ---
 

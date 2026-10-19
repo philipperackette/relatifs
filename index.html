@@ -285,12 +285,10 @@ btnRetour.addEventListener('click', ()=> {
   }
 });
 
-let vueCourante='accueil';
 let derniereOrigine=null; // 'plusieurs' quand on vient de la liste vers "un"
 let scrollListeY=0;
 
 function aller(où){
-  vueCourante=où;
   vueAccueil.classList.add('hidden');
   vueUn.classList.add('hidden');
   vuePlusieurs.classList.add('hidden');
